@@ -1,6 +1,8 @@
+import sys
 import requests
 from bs4 import BeautifulSoup
 
+session = requests.Session()
 LANGUAGES = ("arabic",
              "german",
              "english",
@@ -23,11 +25,12 @@ def all_languages_translation(first_language, languages, word, file):
         if second_language == first_language:
             continue
         url = f"https://context.reverso.net/translation/{first_language}-{second_language}/{word}"
-        response = requests.get(url, headers={'User-Agent': user_agent})
+        response = session.get(url, headers={'User-Agent': user_agent})
         soup = BeautifulSoup(response.content, "lxml")
 
-        # if response.status_code == 200:
-        #     print(response.status_code, "OK")
+        if response.status_code == 403 or response.status_code == 404:
+            print(f"Sorry, unable to find {word}")
+            exit(0)
 
         print(f"\n{second_language.title()} Translations:")
         file.write(f"{second_language.title()} Translations:\n")
@@ -49,11 +52,12 @@ def all_languages_translation(first_language, languages, word, file):
 def standard_translation(first_language, second_language, word, file):
     user_agent = 'Mozilla/5.0'
     url = f"https://context.reverso.net/translation/{first_language}-{second_language}/{word}"
-    response = requests.get(url, headers={'User-Agent': user_agent})
+    response = session.get(url, headers={'User-Agent': user_agent})
     soup = BeautifulSoup(response.content, "lxml")
 
-    # if response.status_code == 200:
-    #     print(response.status_code, "OK")
+    if response.status_code == 403 or response.status_code == 404:
+        print(f"Sorry, unable to find {word}")
+        exit(0)
 
     translations = []
     print(f"\n{second_language.title()} Translations:")
@@ -78,7 +82,7 @@ def standard_translation(first_language, second_language, word, file):
     file.write(f"\n{second_language.title()} Examples:\n")
     for translation in soup.find_all('div', {'class': ['src ltr', 'trg ltr', 'trg rtl arabic']}):
         translation = translation.get_text().strip()
-        #translation = ''.join([i if ord(i) < 128 else '?' for i in translation])
+        # translation = ''.join([i if ord(i) < 128 else '?' for i in translation])
         examples.append(translation)
 
     for i in range(1, 10, 2):
@@ -97,9 +101,23 @@ def choose_language():
 
 
 def main():
-    print("Hello, you're welcome to the translator. Translator supports:")
-    first_language, second_language = choose_language()
-    word = input("Type the word you want to translate:\n")
+    args = sys.argv
+    if len(args) == 4:
+        if args[1] in LANGUAGES and (args[2] in LANGUAGES or args[2] == "all"):
+            first_language = args[1]
+            second_language = args[2] if not args[2] == "all" else LANGUAGES
+            word = args[3]
+        else:
+            if args[1] not in LANGUAGES:
+                print(f"Sorry, the program doesn't support {args[1]}")
+                exit(0)
+            elif args[2] not in LANGUAGES:
+                print(f"Sorry, the program doesn't support {args[2]}")
+                exit(0)
+    else:
+        print("Hello, you're welcome to the translator. Translator supports:")
+        first_language, second_language = choose_language()
+        word = input("Type the word you want to translate:\n")
     file = open(f"{word}.txt", "w", encoding="utf-8")
     if isinstance(second_language, tuple):
         all_languages_translation(first_language, second_language, word, file)
