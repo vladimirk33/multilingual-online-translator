@@ -1,3 +1,4 @@
+import string
 import requests
 from bs4 import BeautifulSoup
 
@@ -23,20 +24,30 @@ def main():
     if response.status_code == 200:
         print(response.status_code, "OK")
 
-    print("Translations")
+    print("\nContext examples:")
 
     translations = []
+    print("\nFrench Translations:")
     for translation in soup.select('[class*="translation ltr dict"]'):
         translation = translation.get_text().strip()
+        translation = ''.join([i if ord(i) < 128 else '?' for i in translation])
         translations.append(translation)
 
-    sent_translations = []
+    for translation in translations[:5]:
+        print(translation)
+
+    french_examples = []
+    print("\nFrench Examples:")
     for translation in soup.find_all('div', {'class': ['src ltr', 'trg ltr']}):
         translation = translation.get_text().strip()
-        sent_translations.append(translation)
+        translation = ''.join([i if ord(i) < 128 else '?' for i in translation])
+        french_examples.append(translation)
 
-    print(translations)
-    print(sent_translations)
+    for i in range(1, 10, 2):
+        print(f"{french_examples[i-1]}:\n{french_examples[i]}\n")
+
+    #print(translations)
+    #print(sent_translations)
 
 
 if __name__ == "__main__":
